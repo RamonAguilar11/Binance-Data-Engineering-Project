@@ -55,5 +55,9 @@ El sistema ha sido optimizado para operar bajo el **Free Tier** de AWS:
 - **Athena:** ~$0.01 USD por cada 2GB escaneados.
 - **Opción de Automatización:** Se evaluó la automatización total de Glue, lo que incrementaría los costos en un 1,000% (de $0.05 a $0.50 USD mensuales), manteniendo la viabilidad económica del proyecto.
 
+## Diagrama de arquitectura
+El flujo del sistema esta representado por el siguiente diagrama:
+![Diagrama_de_arquitectura](Diagrama_reglas.png)
+
 ---
 Desarrollado por Equipo 2 - MarketMatrix como parte del proyecto de Ingeniería de Datos.
