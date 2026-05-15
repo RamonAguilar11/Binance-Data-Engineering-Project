@@ -61,4 +61,3 @@ La "Capa Gold" emite recomendaciones basadas en criterios matemáticos estrictos
 | **MANTENER** | Cuando no se cumplen simultáneamente los criterios de entrada o salida. |
 
 ---
-Desarrollado por Equipo 2 - MarketMatrix como parte del proyecto de Ingeniería de Datos.
