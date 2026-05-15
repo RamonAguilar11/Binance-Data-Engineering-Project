@@ -12,7 +12,7 @@ El objetivo principal es responder a la pregunta fundamental de negocio:
 ## 🏗️ Arquitectura del Sistema
 El sistema sigue el patrón de diseño de **Medallion Architecture** (Capa Bronze, Silver y Gold).
 
-![Arquitectura de MarketMatrix](AQUÍ_VA_EL_LINK_A_TU_IMAGEN)
+![Arquitectura de MarketMatrix](Diagrama_reglas.png)
 *Diagrama de flujo: EventBridge -> Lambda -> S3 -> Glue -> Athena*
 
 ### 🛠️ Tech Stack
@@ -48,10 +48,6 @@ La "Capa Gold" emite recomendaciones basadas en criterios matemáticos estrictos
 | **COMPRA FUERTE** | RSI ≤ 30 + Precio < Banda Inf. Bollinger + Cruce Alcista MACD |
 | **VENTA** | RSI ≥ 70 + Precio > Banda Sup. Bollinger + Cruce Bajista MACD |
 | **MANTENER** | Cuando no se cumplen simultáneamente los criterios de entrada o salida. |
-
-## Diagrama de arquitectura
-El flujo del sistema esta representado por el siguiente diagrama:
-![Diagrama_de_arquitectura](Diagrama_reglas.png)
 
 ---
 Desarrollado por Equipo 2 - MarketMatrix como parte del proyecto de Ingeniería de Datos.
