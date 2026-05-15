@@ -5,9 +5,20 @@
 
 MarketMatrix es una solución de ingeniería de datos que automatiza la extracción, procesamiento y análisis de datos de criptomonedas (Bitcoin) para generar señales de trading precisas. El sistema utiliza una arquitectura *serverless* en AWS para garantizar escalabilidad y eficiencia de costos.
 
-## 🎯 Propósito del Proyecto
+## 🎯 Objetivo del Proyecto
 El objetivo principal es responder a la pregunta fundamental de negocio: 
 > "¿Cuál es el momento estadísticamente óptimo para realizar una operación de trading con cualquier criptomoneda que maximice la probabilidad de ganancia y minimice el riesgo?"
+
+## 🔍 Objetivos Específicos del Proyecto
+
+- Ingerir datos de precio y volumen desde la API de Binance.
+- Almacenar los datos crudos en Amazon S3.
+- Depurar, validar y transformar los datos.
+- Convertir los datos limpios para mejorar el rendimiento de consulta.
+- Consultar los datos preparados con Amazon Athena.
+- Aplicar reglas de decisión basadas en RSI, Bandas de Bollinger y MACD.
+- Generar una recomendación final: compra fuerte, venta o mantener.
+- Mantener trazabilidad del dato desde la ingesta hasta la capa analítica final.
 
 ## 🏗️ Arquitectura del Sistema
 El sistema sigue el patrón de diseño de **Medallion Architecture** (Capa Bronze, Silver y Gold).
@@ -15,7 +26,7 @@ El sistema sigue el patrón de diseño de **Medallion Architecture** (Capa Bronz
 ![Arquitectura de MarketMatrix](Diagrama_reglas.png)
 *Diagrama de flujo: EventBridge -> Lambda -> S3 -> Glue -> Athena*
 
-### 🛠️ Tech Stack
+### 🛠️ Stack de Desarrollo
 - **Extracción:** Python (Boto3, Requests) & Binance API.
 - **Orquestación:** AWS EventBridge (Cron jobs).
 - **Cómputo:** AWS Lambda (Serverless).
