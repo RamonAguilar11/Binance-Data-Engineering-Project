@@ -49,7 +49,7 @@ El sistema sigue el patrón de diseño de **Medallion Architecture** (Capa Bronz
 ### 3. Capa Gold (Business Rules)
 - **Interfaz:** Vistas en Amazon Athena.
 - **Lógica:** Implementación de la **Regla de Triple Confirmación**.
-- **Indicadores:** RSI (14), Bandas de Bollinger (20, 2) y MACD (12, 26, 9).
+- **Indicadores:** RSI, Bandas de Bollinger y MACD.
 
 ## 🛡️ Reglas de Negocio (Trading Logic)
 La "Capa Gold" emite recomendaciones basadas en criterios matemáticos estrictos:
