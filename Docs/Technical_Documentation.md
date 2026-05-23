@@ -1,6 +1,6 @@
 # Technical Documentation: Medallion Data Pipeline on AWS
 **Project:** MarketMatrix (Serverless Financial Data Pipeline)  
-**Version:** 1.0 — May 2026
+**Version:** 1.1 — May 2026
 
 ---
 
@@ -15,19 +15,19 @@ To ensure complete scalability, elasticity, and minimal operational overhead, al
 
 | AWS Service | Resource Name / Identifier | Core Infrastructure Function |
 | :--- | :--- | :--- |
-| **Amazon S3** | `marketmatrix-data-lake-bucket` | Persistent multi-tier cloud storage hosting the structured data lakehouse layers (`/bronze`, `/silver`, `/gold`). |
-| **AWS Lambda** | `marketmatrix-api-ingestion` | Serverless microservice running automated Python runtime tasks to pull active daily candle closes from the exchange API. |
-| **AWS EventBridge** | `marketmatrix-daily-trigger` | Cloud native event orchestrator maintaining a dedicated cron daemon to trigger ingestion runs on exact schedules. |
-| **AWS Glue** | `marketmatrix-silver-pyspark-transform` | Managed serverless Spark job engine that automates data cataloging, indexing, and schema evolution. |
-| **Amazon Athena** | `marketmatrix-gold-analytics-engine` | Serverless distributed query processing engine used to evaluate mathematical indicator logic via direct ANSI SQL operations over S3. |
+| **Amazon S3** | `unam-2026-ingenieriadatos-equipo2-066338415813-mx-central-1-an` | Persistent multi-tier cloud storage hosting the structured data lakehouse layers (`/bronze`, `/silver`, `/gold`). |
+| **AWS Lambda** | `script_binance` | Serverless microservice running automated Python runtime tasks to pull active daily candle closes from the exchange API. |
+| **AWS EventBridge** | `CierreDiarioBTC` | Cloud native event orchestrator maintaining a dedicated cron daemon to trigger ingestion runs on exact schedules. |
+| **AWS Glue** | `2silver_cleaning_data` | Managed serverless Spark job engine that automates data cataloging, indexing, and schema evolution. |
+| **Amazon Athena** | `primary` (WorkGroup) / `glue-2silver` (Database) | Serverless distributed query processing engine used to evaluate mathematical indicator logic via direct ANSI SQL operations over S3. |
 
 ---
 
 ## 3. Pipeline Specifications (ETL Lifecycle)
 
 ### 3.1. Ingestion Layer (API -> Bronze)
-* **Execution Dynamic:** Automating data intake without provisioning continuous compute loops. Every day at exactly **00:05 UTC** (18:05 CDMX), a target ruleset within **AWS EventBridge** dispatches an execution signal to the `marketmatrix-api-ingestion` Lambda function.
-* **Ingestion Logic:** The serverless function targets the Binance API endpoint, extracts the definitive daily closing price structure for Bitcoin (BTC), validates the network handshake, and saves the immutable result directly into `s3://marketmatrix-data-lake-bucket/bronze/` using a raw **CSV** format. Operational monitoring and execution tracing are captured live in **Amazon CloudWatch Logs**.
+* **Execution Dynamic:** Automating data intake without provisioning continuous compute loops. Every day at exactly **00:05 UTC** (18:05 CDMX), a target ruleset within **AWS EventBridge** dispatches an execution signal to the `script_binance` Lambda function.
+* **Ingestion Logic:** The serverless function targets the Binance API endpoint, extracts the definitive daily closing price structure for Bitcoin (BTC), validates the network handshake, and saves the immutable result directly into `s3://unam-2026-ingenieriadatos-equipo2-066338415813-mx-central-1-an/bronze/` using a raw **CSV** format. Operational monitoring and execution tracing are captured live in **Amazon CloudWatch Logs**.
 
 ### 3.2. Transformation Layer (PySpark -> Silver)
 * **Execution Dynamic:** A managed **AWS Glue Job** running an optimized **PySpark** script targets the newly ingested files to cleanse and reformat the data structure.
@@ -67,4 +67,5 @@ The following schema accurately reflects the structural columns, datatypes, and 
 To override the automated event rule or initiate an out-of-schedule pipeline run, engineers can force execution manually using the following **AWS CLI** instruction from an authenticated terminal workstation:
 
 ```bash
-aws glue start-job-run --job-name marketmatrix-silver-pyspark-transform
+aws glue start-job-run --job-name 2silver_cleaning_data
+```
