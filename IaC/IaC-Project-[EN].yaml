@@ -1,0 +1,304 @@
+---
+# ==============================================================================
+# CloudFormation Template - Bitcoin Data Pipeline (BTC/USDT)
+# Architecture: EventBridge -> Lambda -> S3 -> Glue -> Athena
+# Generated with: AWS IaC Generator + manual addition (Glue)
+# Region: mx-central-1
+# ==============================================================================
+
+Metadata:
+  AWSToolsMetrics:
+    IaC_Generator_V1: "arn:aws:cloudformation:mx-central-1:066338415813:generatedTemplate/a5a1e5c7-ee09-4941-9c0c-83c512ef4841"
+    IaC_Generator_V2: "arn:aws:cloudformation:mx-central-1:066338415813:generatedTemplate/aa996ec1-027f-4e11-96b1-ab065c25b51f"
+  ProjectInfo:
+    Description: "Serverless pipeline for extracting, processing and analyzing Bitcoin data to generate trading signals."
+    DataSource: "Binance API (BTC/USDT - Daily Close)"
+    Layers:
+      Bronze: "s3://unam-2026-.../bronze/ — Raw CSV from Binance"
+      Silver: "s3://unam-2026-.../silver/ — Cleaned Parquet with technical indicators"
+      Gold:   "s3://unam-2026-.../gold/  — Athena view with trading signals"
+
+Parameters:
+  # ----------------------------------------------------------------------------
+  # Lambda function code parameters (securely managed)
+  # Only one deployment method applies in production (S3 or ZipFile).
+  # ----------------------------------------------------------------------------
+  LambdaFunctionScriptbinanceCodeS3BucketR5L9b:
+    NoEcho: "true"
+    Type: "String"
+    Description: "S3 bucket containing the Lambda deployment package (.zip)."
+
+  LambdaFunctionScriptbinanceCodeS3KeyNZ9Fk:
+    NoEcho: "true"
+    Type: "String"
+    Description: "S3 key of the Lambda deployment package."
+
+  LambdaFunctionScriptbinanceCodeS3ObjectVersionOp9kR:
+    NoEcho: "true"
+    Type: "String"
+    Description: "S3 object version of the deployment package (for versioning-enabled buckets)."
+
+  LambdaFunctionScriptbinanceCodeZipFile4Q79G:
+    NoEcho: "true"
+    Type: "String"
+    Description: "Inline Lambda source code (only for small functions < 4MB)."
+
+  LambdaFunctionScriptbinanceCodeImageUrigh8FN:
+    NoEcho: "true"
+    Type: "String"
+    Description: "Container image URI in Amazon ECR (only if deploying as a container image)."
+
+  LambdaFunctionScriptbinanceCodeSourceKMSKeyArnKlcIc:
+    NoEcho: "true"
+    Type: "String"
+    Description: "ARN of the KMS key used to encrypt the deployment package (.zip)."
+
+Resources:
+
+  # ============================================================================
+  # 1. ORCHESTRATION — Amazon EventBridge
+  #    Triggers the pipeline once a day (00:05 UTC) at the BTC daily candle close
+  # ============================================================================
+  EventsRuleRuleCierreDiarioBTC:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Events::Rule"
+    DeletionPolicy: "Retain"
+    Properties:
+      Name: "CierreDiarioBTC"
+      Description: "Executes the script at the close of the 24-hour cryptocurrency candle"
+      EventBusName: "default"
+      ScheduleExpression: "cron(5 0 * * ? *)"
+      State: "ENABLED"
+      Targets:
+        - Arn: "arn:aws:lambda:mx-central-1:066338415813:function:script_binance"
+          Id: "7wt2sftn4puuuz5e8hb"
+      Tags: []
+
+  # ============================================================================
+  # 2. COMPUTE — AWS Lambda
+  #    Extracts OHLCV data from the Binance API and deposits it into S3 Bronze
+  # ============================================================================
+  LambdaFunctionScriptbinance:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName: "script_binance"
+      Description: "Extracts daily BTC/USDT data from the Binance API and stores it in S3 (Bronze layer)."
+      Runtime: "python3.14"
+      Handler: "lambda_function.lambda_handler"
+      Role: "arn:aws:iam::066338415813:role/LambdaToS3FullAccess"
+      Architectures:
+        - "x86_64"
+      MemorySize: 128
+      Timeout: 30
+      PackageType: "Zip"
+      Layers:
+        - "arn:aws:lambda:mx-central-1:066338415813:layer:binance_layer:2"
+      EphemeralStorage:
+        Size: 512
+      TracingConfig:
+        Mode: "PassThrough"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/script_binance"
+      FileSystemConfigs: []
+      Code:
+        S3Bucket:
+          Ref: "LambdaFunctionScriptbinanceCodeS3BucketR5L9b"
+        S3Key:
+          Ref: "LambdaFunctionScriptbinanceCodeS3KeyNZ9Fk"
+        S3ObjectVersion:
+          Ref: "LambdaFunctionScriptbinanceCodeS3ObjectVersionOp9kR"
+        ZipFile:
+          Ref: "LambdaFunctionScriptbinanceCodeZipFile4Q79G"
+        ImageUri:
+          Ref: "LambdaFunctionScriptbinanceCodeImageUrigh8FN"
+        SourceKMSKeyArn:
+          Ref: "LambdaFunctionScriptbinanceCodeSourceKMSKeyArnKlcIc"
+
+  # Permission for EventBridge to invoke the Lambda function
+  LambdaPermissionFunctionscriptbinance:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Lambda::Permission"
+    DeletionPolicy: "Retain"
+    Properties:
+      FunctionName: "arn:aws:lambda:mx-central-1:066338415813:function:script_binance"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: "arn:aws:events:mx-central-1:066338415813:rule/CierreDiarioBTC"
+
+  # ============================================================================
+  # 3. STORAGE — Amazon S3 (Data Lake)
+  #    Main bucket with three layers (Bronze / Silver / Gold)
+  #
+  #    Folder structure:
+  #      /bronze/   -> Raw CSV from Binance (fields: fecha, precio, etc.)
+  #      /silver/   -> Cleaned Parquet with calculated technical indicators
+  #      /gold/     -> Athena query results with trading signals
+  # ============================================================================
+  S3BucketUnam2026ingenieriadatosequipo2066338415813mxcentral1an:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: "Retain"
+    Properties:
+      BucketName: "unam-2026-ingenieriadatos-equipo2-066338415813-mx-central-1-an"
+      AbacStatus: "Disabled"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            BlockedEncryptionTypes:
+              EncryptionType:
+                - "SSE-C"
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+
+  # Auxiliary AWS Glue bucket (PySpark scripts and libraries)
+  S3BucketAwsglueassets066338415813mxcentral1:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: "Retain"
+    Properties:
+      BucketName: "aws-glue-assets-066338415813-mx-central-1"
+      AbacStatus: "Disabled"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: false
+            BlockedEncryptionTypes:
+              EncryptionType:
+                - "SSE-C"
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+
+  # ============================================================================
+  # 4. PROCESSING / ETL — AWS Glue
+  #    PySpark Job: Reads Bronze (CSV), calculates technical indicators
+  #    (RSI, Bollinger Bands, MACD, Moving Average) and writes Silver (Parquet)
+  #
+  #    NOTE: This resource was added manually. AWS::Glue::Job and
+  #    AWS::Glue::Crawler are not detectable by the IaC Generator since
+  #    they are not integrated with Cloud Control API as of this template's date.
+  # ============================================================================
+
+  # Glue Catalog database (referenced by Athena Named Queries)
+  GlueDatabaseGlue2Silver:
+    Type: "AWS::Glue::Database"
+    Properties:
+      CatalogId: !Ref "AWS::AccountId"
+      DatabaseInput:
+        Name: "glue-2silver"
+        Description: "Glue catalog database for the Silver layer of the BTC pipeline. Contains the silver_table in Parquet format with calculated technical indicators."
+
+  # PySpark ETL Job: Bronze (CSV) -> Silver (Parquet)
+  GlueJobSilverCleaningData:
+    Type: "AWS::Glue::Job"
+    Properties:
+      Name: "2silver_cleaning_data"
+      Description: "PySpark ETL job that reads raw data from the Bronze layer (CSV), calculates technical indicators (RSI, Bollinger Bands, MACD, 20-day Moving Average) and writes the Silver layer in Parquet format."
+      Role: "arn:aws:iam::066338415813:role/LambdaToS3FullAccess"
+      Command:
+        Name: "glueetl"
+        ScriptLocation: !Sub "s3://aws-glue-assets-066338415813-mx-central-1/scripts/2silver_cleaning_data.py"
+        PythonVersion: "3"
+      DefaultArguments:
+        "--job-language": "python"
+        "--enable-metrics": "true"
+        "--enable-continuous-cloudwatch-log": "true"
+        "--TempDir": !Sub "s3://aws-glue-assets-066338415813-mx-central-1/temporary/"
+        "--source_bucket": "unam-2026-ingenieriadatos-equipo2-066338415813-mx-central-1-an"
+        "--source_prefix": "bronze/"
+        "--target_prefix": "silver/"
+        "--database_name": "glue-2silver"
+        "--table_name": "silver_table"
+      GlueVersion: "4.0"
+      WorkerType: "G.1X"
+      NumberOfWorkers: 2
+      Timeout: 60
+      MaxRetries: 0
+      ExecutionProperty:
+        MaxConcurrentRuns: 1
+
+  # ============================================================================
+  # 5. ANALYTICS — Amazon Athena
+  #    SQL queries over the Silver layer (Parquet) to generate trading signals
+  #    using RSI, Bollinger Bands and MACD
+  # ============================================================================
+  AthenaWorkGroupPrimary:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Athena::WorkGroup"
+    DeletionPolicy: "Retain"
+    Properties:
+      Name: "primary"
+      State: "ENABLED"
+      Tags: []
+      WorkGroupConfiguration:
+        RequesterPaysEnabled: false
+        EnforceWorkGroupConfiguration: false
+        PublishCloudWatchMetricsEnabled: true
+        EngineVersion:
+          SelectedEngineVersion: "AUTO"
+        ResultConfiguration: {}
+
+  # Named Query 1: Creates the Gold view with trading signals
+  # Conditional SQL predictive model using RSI, Bollinger Bands and MACD
+  AthenaNamedQueryGoldPrediction:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Athena::NamedQuery"
+    DeletionPolicy: "Retain"
+    Properties:
+      Name: "Query Prediction"
+      Description: "Uses data received from the API to generate a trading signal prediction"
+      WorkGroup: "primary"
+      Database: "glue-2silver"
+      QueryString: |
+        CREATE OR REPLACE VIEW "gold_prediction" AS
+        SELECT
+            fecha,
+            precio,
+            CASE
+                WHEN rsi <= 30 THEN 'SOBREVENDIDO (Oportunidad)'
+                WHEN rsi >= 70 THEN 'SOBRECOMPRADO (Riesgo)'
+                ELSE 'NEUTRAL'
+            END AS estado_rsi,
+            CASE
+                WHEN precio <= bollinger_baja THEN 'PRECIO BAJO (Soporte)'
+                WHEN precio >= bollinger_alta THEN 'PRECIO ALTO (Resistencia)'
+                ELSE 'RANGO NORMAL'
+            END AS posicion_bollinger,
+            CASE
+                WHEN rsi <= 35 AND precio <= (bollinger_baja * 1.02) AND macd_linea > macd_senal
+                     THEN 'COMPRA FUERTE'
+                WHEN rsi >= 65 AND precio >= (bollinger_alta * 0.98) AND macd_linea < macd_senal
+                     THEN 'VENTA / TOMA GANANCIAS'
+                ELSE 'MANTENER / ESPERAR'
+            END AS recomendacion_algoritmica
+        FROM "glue-2silver"."silver_table"
+        WHERE macd_linea IS NOT NULL
+
+  # Named Query 2: Queries the Gold view results ordered by date
+  AthenaNamedQueryConsultingGoldResults:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::Athena::NamedQuery"
+    DeletionPolicy: "Retain"
+    Properties:
+      Name: "Consulting Gold Results"
+      WorkGroup: "primary"
+      Database: "glue-2silver"
+      QueryString: |
+        SELECT * FROM "gold_prediction" ORDER BY fecha DESC
