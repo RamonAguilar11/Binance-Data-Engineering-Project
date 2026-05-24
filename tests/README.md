@@ -7,8 +7,8 @@ tests/
 ├── conftest.py
 ├── unit/
 │   ├── test_athena_sql_unit.py
-   │   ├── test_importabilidad.py
-   │   ├── test_indicadores.py
+   │   ├── test_importability.py
+   │   ├── test_indicators.py
    │   └── test_lambda_handler_unit.py
 └── integration/
     ├── test_athena_view_integration.py
