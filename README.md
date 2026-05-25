@@ -1,63 +1,63 @@
 # Binance-Data-Engineering-Project
 
 # MarketMatrix 📊🚀
-**Prediccion de Trading de Criptomonedas**
+**Cryptocurrency Trading Prediction**
 
-MarketMatrix es una solución de ingeniería de datos que automatiza la extracción, procesamiento y análisis de datos de criptomonedas (Bitcoin) para generar señales de trading precisas. El sistema utiliza una arquitectura *serverless* en AWS para garantizar escalabilidad y eficiencia de costos.
+MarketMatrix is a data engineering solution that automates the extraction, processing, and analysis of cryptocurrency data (Bitcoin) to generate accurate trading signals. The system uses a *serverless* architecture on AWS to ensure scalability and cost efficiency.
 
-## 🎯 Objetivo del Proyecto
-El objetivo principal es responder a la pregunta fundamental de negocio: 
-> "¿Cuál es el momento estadísticamente óptimo para realizar una operación de trading con cualquier criptomoneda que maximice la probabilidad de ganancia y minimice el riesgo?"
+## 🎯 Project Objective
+The main objective is to answer the fundamental business question:
+> "What is the statistically optimal moment to execute a trading operation with any cryptocurrency that maximizes the probability of profit and minimizes risk?"
 
-## 🔍 Objetivos Específicos del Proyecto
+## 🔍 Specific Project Objectives
 
-- Ingerir datos de precio y volumen desde la API de Binance.
-- Almacenar los datos crudos en Amazon S3.
-- Depurar, validar y transformar los datos.
-- Convertir los datos limpios para mejorar el rendimiento de consulta.
-- Consultar los datos preparados con Amazon Athena.
-- Aplicar reglas de decisión basadas en RSI, Bandas de Bollinger y MACD.
-- Generar una recomendación final: compra fuerte, venta o mantener.
-- Mantener trazabilidad del dato desde la ingesta hasta la capa analítica final.
+- Ingest price and volume data from the Binance API.
+- Store raw data in Amazon S3.
+- Clean, validate, and transform the data.
+- Convert clean data to improve query performance.
+- Query the prepared data with Amazon Athena.
+- Apply decision rules based on RSI, Bollinger Bands, and MACD.
+- Generate a final recommendation: strong buy, sell, or hold.
+- Maintain data traceability from ingestion to the final analytical layer.
 
-## 🏗️ Arquitectura del Sistema
-El sistema sigue el patrón de diseño de **Medallion Architecture** (Capa Bronze, Silver y Gold).
+## 🏗️ System Architecture
+The system follows the **Medallion Architecture** design pattern (Bronze, Silver, and Gold layers).
 
 ![Arquitectura de MarketMatrix](Images/Diagrama_reglas.png)
-*Diagrama de flujo: EventBridge -> Lambda -> S3 -> Glue -> Athena*
+*Flow Diagram: EventBridge -> Lambda -> S3 -> Glue -> Athena*
 
-### 🛠️ Stack de Desarrollo
-- **Extracción:** Python (Boto3, Requests) & Binance API.
-- **Orquestación:** AWS EventBridge (Cron jobs).
-- **Cómputo:** AWS Lambda (Serverless).
-- **Almacenamiento:** Amazon S3 (Data Lake).
-- **Procesamiento/ETL:** AWS Glue & PySpark.
-- **Consultas/Analítica:** Amazon Athena (SQL).
+### 🛠️ Development Stack
+- **Extraction:** Python (Boto3, Requests) & Binance API.
+- **Orchestration:** AWS EventBridge (Cron jobs).
+- **Compute:** AWS Lambda (Serverless).
+- **Storage:** Amazon S3 (Data Lake).
+- **Processing/ETL:** AWS Glue & PySpark.
+- **Querying/Analytics:** Amazon Athena (SQL).
 
-## 📊 El Pipeline de Datos
+## 📊 The Data Pipeline
 
-### 1. Capa Bronze (Raw Data)
-- **Frecuencia:** Diaria (00:05 UTC / 18:05 CDMX).
-- **Formato:** CSV.
-- **Descripción:** Captura la vela diaria de Binance justo después del cierre oficial, asegurando datos inmutables y completos.
+### 1. Bronze Layer (Raw Data)
+- **Frequency:** Daily (00:05 UTC / 18:05 CDMX).
+- **Format:** CSV.
+- **Description:** Captures the daily Binance candlestick right after the official close, ensuring immutable and complete data.
 
-### 2. Capa Silver (Processed Data)
-- **Proceso:** AWS Glue Job.
-- **Formato:** Parquet (Optimizado para analítica).
-- **Descripción:** Limpieza de datos, eliminación de duplicados y transformación de tipos de datos para reducir costos de escaneo en Athena.
+### 2. Silver Layer (Processed Data)
+- **Process:** AWS Glue Job.
+- **Format:** Parquet (Optimized for analytics).
+- **Description:** Data cleaning, duplicate removal, and data type transformation to reduce scan costs in Athena.
 
-### 3. Capa Gold (Business Rules)
-- **Interfaz:** Vistas en Amazon Athena.
-- **Lógica:** Implementación de la **Regla de Triple Confirmación**.
-- **Indicadores:** RSI, Bandas de Bollinger y MACD.
+### 3. Gold Layer (Business Rules)
+- **Interface:** Views in Amazon Athena.
+- **Logic:** Implementation of the **Triple Confirmation Rule**.
+- **Indicators:** RSI, Bollinger Bands, and MACD.
 
-## 🛡️ Reglas de Negocio (Trading Logic)
-La "Capa Gold" emite recomendaciones basadas en criterios matemáticos estrictos:
+## 🛡️ Business Rules (Trading Logic)
+The "Gold Layer" issues recommendations based on strict mathematical criteria:
 
-| Estado | Condición Técnica |
+| Status | Technical Condition |
 | :--- | :--- |
-| **COMPRA FUERTE** | RSI ≤ 30 + Precio < Banda Inf. Bollinger + Cruce Alcista MACD |
-| **VENTA** | RSI ≥ 70 + Precio > Banda Sup. Bollinger + Cruce Bajista MACD |
-| **MANTENER** | Cuando no se cumplen simultáneamente los criterios de entrada o salida. |
+| **STRONG BUY** | RSI ≤ 30 + Price < Lower Bollinger Band + MACD Bullish Crossover |
+| **SELL** | RSI ≥ 70 + Price > Upper Bollinger Band + MACD Bearish Crossover |
+| **HOLD** | When the entry or exit criteria are not met simultaneously. |
 
 ---
