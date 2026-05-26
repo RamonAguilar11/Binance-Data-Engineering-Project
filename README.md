@@ -23,7 +23,7 @@ The main objective is to answer the fundamental business question:
 ## 🏗️ System Architecture
 The system follows the **Medallion Architecture** design pattern (Bronze, Silver, and Gold layers).
 
-![Arquitectura de MarketMatrix](Images/Diagrama_reglas.png)
+![Arquitectura de MarketMatrix](Images/Sequence_diagram.png)
 *Flow Diagram: EventBridge -> Lambda -> S3 -> Glue -> Athena*
 
 ### 🛠️ Development Stack
