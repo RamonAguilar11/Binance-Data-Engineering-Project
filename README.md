@@ -35,6 +35,7 @@ The system follows the **Medallion Architecture** design pattern (Bronze, Silver
 - **Querying/Analytics:** Amazon Athena (SQL).
 
 ## 📊 The Data Pipeline
+(Images/Diagrama_reglas.png)
 
 ### 1. Bronze Layer (Raw Data)
 - **Frequency:** Daily (00:05 UTC / 18:05 CDMX).
