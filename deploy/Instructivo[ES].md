@@ -47,7 +47,7 @@ La AWS Lambda se encarga de realizar la petición HTTP a la API de Binance, proc
    * Una vez creada la Lambda, ve a la pestaña de **Configuration** -> **Permissions** y haz clic en el rol generado para ir a la consola de IAM.
    * Adjunta una política en línea (Inline Policy) que otorgue permisos específicos de escritura (`PutObject`) únicamente en el bucket de S3 creado en el Paso 1.
 5. **Carga de Código:**
-   * Copia el código fuente de tu script de extracción (`src/extractor.py`) y pégalo en el editor de código de la Lambda.
+   * Copia el código fuente de tu script de extracción (`src/lambda/script_binance.py`) y pégalo en el editor de código de la Lambda.
    * *Asegúrate de configurar las variables de entorno necesarias si estás usando firmas de API, o de apuntar directamente al endpoint público de Binance (`https://api.binance.com/api/v3/klines`).*
 6. **Configuración de Tiempo de Espera (Timeout):**
    * En **Configuration** -> **General configuration**, cambia el Timeout por defecto (3 segundos) a **1 minuto** para prevenir caídas por latencia de red durante la llamada a la API externa.
@@ -74,38 +74,30 @@ Para capturar la vela diaria oficial inmediatamente después de su cierre, confi
 
 ---
 
-## 🗄️ Paso 4: Catálogo de Datos y Transformación (AWS Glue)
+## 🗄️ Paso 4: Transformación de Datos (AWS Glue Job)
 
-AWS Glue se encargará de estructurar el esquema de datos y ejecutar el proceso ETL para transformar los CSV de la capa Bronze a archivos optimizados Parquet en la capa Silver.
+Para mitigar por completo los costos de infraestructura, **no se utilizan AWS Glue Crawlers** en este proyecto. En su lugar, el esquema y la ingesta se controlan directamente desde el script Spark y el motor de consultas Athena.
 
-### 4.1. Configuración del Crawler para la Capa Bronze
-1. Ve a **AWS Glue** -> **Crawlers** -> **Create crawler**.
-2. **Name:** `marketmatrix-bronze-crawler`.
-3. **Data store:** Elige `S3` y añade la ruta completa a tu carpeta Bronze: `s3://<TU-BUCKET-NAME>/1bronze/`.
-4. **IAM Role:** Crea o selecciona un rol de IAM con la política administrada `AWSGlueServiceRole` y que posea permisos de lectura en tu bucket de S3.
-5. **Output Database:** Crea una base de datos en el catálogo de datos llamada `marketmatrix_db`.
-6. **Schedule:** Configúralo bajo demanda o programado para ejecutarse después de la Lambda. Haz clic en **Create y Run crawler** para mapear los primeros datos y crear la tabla externa inicial.
-
-### 4.2. Despliegue del Glue Job (PySpark)
 1. Ve a **AWS Glue** -> **ETL Jobs** -> **Script editor**.
-2. Selecciona **Spark script editor** para cargar tu script de PySpark (`src/transform_silver.py`).
+2. Selecciona **Spark script editor** para cargar tu script de PySpark (`src/glue/2silver_cleaning_data.py`).
 3. El script debe realizar las siguientes acciones lógicas:
-   * Leer los datos crudos desde la tabla de catálogo de `1bronze/`.
+   * Leer los archivos CSV crudos directamente desde la ruta `s3://<TU-BUCKET-NAME>/1bronze/`.
    * Realizar la limpieza de datos (eliminar registros duplicados, castear tipos de datos: `timestamp` a fecha, precios a tipo `double`).
    * Escribir los datos optimizados particionados por año/mes/día en la ruta de S3: `s3://<TU-BUCKET-NAME>/2silver/` utilizando el formato **Parquet**.
-4. **Guardar y Ejecutar:** Guarda el Job como `marketmatrix-silver-transformation-job`. *Nota de Arquitectura: Conforme a nuestras decisiones de diseño para optimizar costos, este Job se ejecuta de manera manual o espaciada (fines de semana) para reducir un 1,000% el consumo del presupuesto dentro del AWS Free Tier.*
+4. **Guardar y Ejecutar:** Guarda el Job como `marketmatrix-silver-transformation-job`. 
+   * *Nota de Diseño:* Este Job se ejecuta de manera manual o espaciada (fines de semana) para reducir al mínimo el consumo del presupuesto dentro del AWS Free Tier.
 
 ---
 
-## 🔍 Paso 5: Consultas Analíticas y Reglas de Negocio (Amazon Athena)
+## 🔍 Paso 5: Consultas Analíticas y Base de Datos (Amazon Athena)
 
-Amazon Athena actuará como nuestro motor de analítica para la Capa Gold, procesando las consultas SQL de manera serverless sobre los archivos Parquet de la Capa Silver.
+Amazon Athena actuará como nuestro motor de analítica para la Capa Gold, procesando las consultas SQL de manera serverless a un costo cero de mantenimiento estructural.
 
 1. Ve a la consola de **Amazon Athena**.
 2. **Configuración Inicial:** Antes de ejecutar tu primer query, ve a la pestaña **Settings** y configura un directorio en S3 para almacenar los resultados de las consultas (ej. `s3://<TU-BUCKET-NAME>/3gold/query-results/`).
-3. **Creación de la Tabla de la Capa Silver:** Ejecuta un nuevo Crawler sobre la carpeta `2silver/` o define la tabla particionada directamente en Athena.
+3. **Creación Manual de la Tabla (Capa Silver):** * Ejecuta el script DDL de creación de vista (`src/athena/athena_query.sql`) en el editor de Athena. Este script define manualmente las columnas y apunta a la ruta de S3: `s3://<TU-BUCKET-NAME>/2silver/`.
 4. **Despliegue de la Vista de la Capa Gold:**
-   * Copia y ejecuta el script SQL desarrollado en tu editor de Athena para generar la vista analítica que calcula los indicadores técnicos correlacionados: **RSI (14)**, **Bandas de Bollinger (20, 2)** y el **MACD (12, 26, 9)**.
+   * Copia y ejecuta el script SQL desarrollado para generar la vista analítica que calcula los indicadores técnicos correlacionados: **RSI (14)**, **Bandas de Bollinger (20, 2)** y el **MACD (12, 26, 9)**.
    * La consulta implementará la **Regla de Triple Confirmación** para arrojar los estados automáticos de `COMPRA FUERTE`, `VENTA` o `MANTENER`.
 
 ---
