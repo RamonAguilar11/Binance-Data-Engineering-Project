@@ -95,7 +95,7 @@ Amazon Athena acts as our serverless interactive query engine for the Gold Layer
 
 1. Go to the **Amazon Athena** console.
 2. **Initial Setup:** Before executing your baseline query payload, navigate to the **Settings** tab and configure a designated query output path directory in S3 (e.g., `s3://<YOUR-BUCKET-NAME>/3gold/query-results/`).
-3. **Manual Table Schema Definition (Silver Layer):** * Execute the manual DDL DDL External Table script (`src/athena/athena_query.sql`) inside the Athena editor. This script explicitly creates the structural schema pointing to your S3 storage path: `s3://<YOUR-BUCKET-NAME>/2silver/`.
+3. **Manual Table Schema Definition (Silver Layer):** * Execute the manual DDL View script (`src/athena/athena_query.sql`) inside the Athena editor. This script explicitly creates the structural schema pointing to your S3 storage path: `s3://<YOUR-BUCKET-NAME>/2silver/`.
 4. **Gold View Deployment:**
    * Copy and run the optimized SQL business rules script inside the query editor to build the analytical view that evaluates the core indicators: **RSI (14)**, **Bollinger Bands (20, 2)**, and **MACD (12, 26, 9)**.
    * The SQL conditional framework enforces the **Triple Confirmation Strategy** to yield automatic signals: `COMPRA FUERTE` (Strong Buy), `VENTA` (Sell), or `MANTENER` (Hold).
