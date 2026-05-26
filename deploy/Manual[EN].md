@@ -47,7 +47,7 @@ The AWS Lambda function acts as the automated ingestion engine, orchestrating HT
    * Once the Lambda function finishes initializing, go to the **Configuration** tab -> **Permissions**, and click the generated IAM Role link to launch the IAM Console.
    * Attach an Inline Policy granting explicit write permissions (`PutObject`) restricted exclusively to the S3 bucket created in Step 1.
 5. **Code Upload:**
-   * Copy the source code from your local ingestion script (`src/extractor.py`) and paste it into the Lambda inline code editor.
+   * Copy the source code from your local ingestion script (`src/lambda/script_binance.py`) and paste it into the Lambda inline code editor.
    * *Ensure environmental variables are configured if utilizing API authorization signatures, or point directly to the public Spot API market data endpoint (`https://api.binance.com/api/v3/klines`).*
 6. **Timeout Adjustments:**
    * Under **Configuration** -> **General configuration**, edit the default Timeout boundary from 3 seconds to **1 minute** to mitigate connection drops caused by external network API latency.
@@ -74,39 +74,31 @@ To isolate and capture the official daily candlestick closure immediately after 
 
 ---
 
-## 🗄️ Step 4: Data Cataloging and ETL Transformation (AWS Glue)
+## 🗄️ Step 4: Data Transformation (AWS Glue Job)
 
-AWS Glue structures the semantic data catalog schema and runs PySpark ETL transformations to convert flat files into efficient binary columns inside the Silver tier.
+To completely mitigate infrastructure costs, **AWS Glue Crawlers are not utilized** in this project. Instead, schema definitions and table partitioning are managed directly via Spark processing and the Athena query engine.
 
-### 4.1. Bronze Layer Crawler Setup
-1. Go to **AWS Glue** -> **Crawlers** -> **Create crawler**.
-2. **Name:** `marketmatrix-bronze-crawler`.
-3. **Data store:** Select `S3` and enter the full uniform resource path of your raw directory: `s3://<YOUR-BUCKET-NAME>/1bronze/`.
-4. **IAM Role:** Provision or attach an IAM role utilizing the standard `AWSGlueServiceRole` managed policy with read privileges mapped to your target S3 bucket.
-5. **Output Database:** Create a new data catalog target namespace called `marketmatrix_db`.
-6. **Schedule:** Configure to run on-demand or sequential to the extraction pipeline. Click **Create and Run crawler** to parse structural schema fields.
-
-### 4.2. Glue Job Deployment (PySpark)
 1. Navigate to **AWS Glue** -> **ETL Jobs** -> **Script editor**.
-2. Select **Spark script editor** to load your processing engine file (`src/transform_silver.py`).
+2. Select **Spark script editor** to load your processing engine file (`src/glue/2silver_cleaning_data.py`).
 3. Ensure the script maps out the following pipeline operations:
-   * Read raw entries from the data catalog database pointing to `1bronze/`.
+   * Read raw entries directly from the raw directory bucket path `s3://<YOUR-BUCKET-NAME>/1bronze/`.
    * Execute schema cleanup operations (deduplicate records, cast data types: `timestamp` to Date string formats, numerical metrics to `double`).
    * Output partitioned file structures matching Year/Month/Day keys into the destination path: `s3://<YOUR-BUCKET-NAME>/2silver/` using **Parquet** formatting.
-4. **Save and Trigger:** Save the asset as `marketmatrix-silver-transformation-job`. *Architecture Note: To optimize operational budgets, this job is intentionally executed manually or scheduled weekly to minimize runtime usage under the AWS Free Tier limitations.*
+4. **Save and Trigger:** Save the asset as `marketmatrix-silver-transformation-job`. 
+   * *Architecture Note:* To optimize operational budgets, this job is intentionally executed manually or scheduled weekly to minimize runtime usage under the AWS Free Tier limitations.
 
 ---
 
-## 🔍 Step 5: Analytical Engine and Business Rules (Amazon Athena)
+## 🔍 Step 5: Analytical Engine and Manual Schema Mapping (Amazon Athena)
 
 Amazon Athena acts as our serverless interactive query engine for the Gold Layer, evaluating SQL computations directly on top of partitioned columnar files at zero infrastructure maintenance costs.
 
 1. Go to the **Amazon Athena** console.
 2. **Initial Setup:** Before executing your baseline query payload, navigate to the **Settings** tab and configure a designated query output path directory in S3 (e.g., `s3://<YOUR-BUCKET-NAME>/3gold/query-results/`).
-3. **Silver Table Creation:** Run a target schema crawler over the `2silver/` folder or execute an external DDL script inside Athena to index the Parquet records.
+3. **Manual Table Schema Definition (Silver Layer):** * Execute the manual DDL DDL External Table script (`src/athena/athena_query.sql`) inside the Athena editor. This script explicitly creates the structural schema pointing to your S3 storage path: `s3://<YOUR-BUCKET-NAME>/2silver/`.
 4. **Gold View Deployment:**
    * Copy and run the optimized SQL business rules script inside the query editor to build the analytical view that evaluates the core indicators: **RSI (14)**, **Bollinger Bands (20, 2)**, and **MACD (12, 26, 9)**.
-   * The SQL conditional framework enforces the **Triple Confirmation Strategy** detailed in the functional specification to yield automatic signals: `COMPRA FUERTE` (Strong Buy), `VENTA` (Sell), or `MANTENER` (Hold).
+   * The SQL conditional framework enforces the **Triple Confirmation Strategy** to yield automatic signals: `COMPRA FUERTE` (Strong Buy), `VENTA` (Sell), or `MANTENER` (Hold).
 
 ---
 
