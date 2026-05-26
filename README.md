@@ -35,7 +35,6 @@ The system follows the **Medallion Architecture** design pattern (Bronze, Silver
 - **Querying/Analytics:** Amazon Athena (SQL).
 
 ## 📊 The Data Pipeline
-(Images/Diagrama_reglas.png)
 
 ### 1. Bronze Layer (Raw Data)
 - **Frequency:** Daily (00:05 UTC / 18:05 CDMX).
@@ -51,7 +50,7 @@ The system follows the **Medallion Architecture** design pattern (Bronze, Silver
 - **Interface:** Views in Amazon Athena.
 - **Logic:** Implementation of the **Triple Confirmation Rule**.
 - **Indicators:** RSI, Bollinger Bands, and MACD.
-
+![Architecture Diagram Extended](Images/Diagrama_reglas.png)
 ## 🛡️ Business Rules (Trading Logic)
 The "Gold Layer" issues recommendations based on strict mathematical criteria:
 
