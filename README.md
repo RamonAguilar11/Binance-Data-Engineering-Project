@@ -60,4 +60,10 @@ The "Gold Layer" issues recommendations based on strict mathematical criteria:
 | **SELL** | RSI ≥ 70 + Price > Upper Bollinger Band + MACD Bearish Crossover |
 | **HOLD** | When the entry or exit criteria are not met simultaneously. |
 
+## 💰 Cost Analysis (AWS Serverless)
+The system has been optimized to operate within the **Free Tier** of AWS:
+- **Lambda & S3:** ~$0.00 USD (within the free limit).
+- **Athena:** ~$0.01 USD for every 2GB scans.
+- **Automation Option:** The total automation from Glue was evaluated, this would increment the cost about 1,000% (from $0.05 to $0.50USD monnthly), keeping economic viability for this project
+
 ---
